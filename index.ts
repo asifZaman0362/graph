@@ -59,20 +59,12 @@ type RawData = Point[][];
 
 let rawData: RawData = [
   [
-    { x: 10, y: 100 },
+    { x: 0, y: 100 },
     { x: 50, y: 400 },
     { x: 100, y: 100 },
     { x: 150, y: 540 },
     { x: 200, y: 300 }
   ],
-  [
-    { x: 10, y: 200 },
-    { x: 50, y: 400 },
-    { x: 100, y: 900 },
-    { x: 150, y: 1020 },
-    { x: 200, y: 200 },
-    { x: 250, y: 400 }
-  ]
 ];
 
 let height = 640;
@@ -151,7 +143,7 @@ function setup() {
   canvas.width = width;
   document.body.appendChild(canvas);
   const context = canvas.getContext("2d");
-  let data = transformData(rawData, 0, 0, width, height);
+  let data = transformData(rawData, 100, 100, width - 200, height - 200);
   if (!context) return;
   canvas.addEventListener("mousemove", (event: MouseEvent) => {
     const mousePos = getMousePosition(canvas, event);
@@ -251,24 +243,54 @@ function drawAxes(
   offsety: number,
   intervalsy: number,
   labely: string,
-
+  width_data: number,
+  data_start_x: number,
+  height_data: number,
+  data_start_y: number
 ) {
   // draw y axis
   drawLineCustom(ctx, { x: startx + offsetx, y: starty + offsety }, { x: startx + offsetx, y: endy + offsety }, "black", lineWidth);
+  // draw y axis label
+  ctx.save();
+  ctx.translate(startx - 50, (endy - starty) / 2 + starty);
+  ctx.rotate(Math.PI * 1.5);
+  ctx.fillStyle = "black";
+  ctx.textAlign = "center";
+  ctx.fillText(labely, 0, 0);
+  ctx.restore();
   // draw x axis
-  drawLineCustom(ctx, { x: startx + offsetx, y: starty + offsety }, { x: endx + offsetx, y: starty + offsety }, "black", lineWidth);
-  for (let x = 0; x < intervalsx; x++) {
-
+  drawLineCustom(ctx, { x: startx + offsetx, y: endy }, { x: endx + offsetx, y: endy }, "black", lineWidth);
+  // draw x axis label
+  ctx.fillStyle = "black";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(labelx, (endx - startx) / 2 + startx, endy + 30);
+  let dx = width_data / intervalsx;
+  let dy = height_data / intervalsy;
+  for (let x = 0; x <= intervalsx; x++) {
+    let xpos = x * (endx - startx) / intervalsx + startx;
+    let data_point_x = (dx * x) + data_start_x;
+    ctx.fillStyle = "black";
+    ctx.font = "14px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(data_point_x.toString(), xpos, endy + 10);
   }
-  for (let y = 0; y < intervalsy; y++) {
-    let ypos = y * (endy - starty) / intervalsy;
+  for (let y = 0; y <= intervalsy; y++) {
+    let ypos = y * (endy - starty) / intervalsy + starty;
+    let data_point_y = height_data - (y * dy) + data_start_y;
+    ctx.fillStyle = "black";
+    ctx.font = "14px sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "right";
+    ctx.fillText(data_point_y.toString(), startx - 10, ypos);
     drawLineCustom(ctx, { x: startx + offsetx, y: ypos + offsety }, { x: endx + offsetx, y: ypos + offsety }, y == 0 ? "gray" : "gray", lineWidth);
   }
 }
 
 function render(ctx: Context, data: PolyLine[]) {
   ctx.clearRect(0, 0, width, height);
-  drawAxes(ctx, 0, width, 1, 0, 0, "", 0, height, 0, 10, "");
+  drawAxes(ctx, 100, width - 100, 1, 0, 4, "time", 100, height - 100, 0, 10, "your mom's weight(lbs)", 200, 0, 440, 100);
   for (let line of data) {
     if (line.points.length == 0) continue;
     let prev = line.points[0];

@@ -6,7 +6,7 @@ var config = {
     COLOR_POINT_NORMAL: "orange",
     COLOR_POINT_HOVERED: "red",
     POINT_SIZE_NORMAL: 5,
-    POINT_SIZE_HOVERED: 7
+    POINT_SIZE_HOVERED: 7,
 };
 function axes(ctx, config) {
     ctx.lineWidth = 2;
@@ -41,20 +41,12 @@ var PolyLine = /** @class */ (function () {
 }());
 var rawData = [
     [
-        { x: 10, y: 100 },
+        { x: 0, y: 100 },
         { x: 50, y: 400 },
         { x: 100, y: 100 },
         { x: 150, y: 540 },
         { x: 200, y: 300 }
     ],
-    [
-        { x: 10, y: 200 },
-        { x: 50, y: 400 },
-        { x: 100, y: 900 },
-        { x: 150, y: 1020 },
-        { x: 200, y: 200 },
-        { x: 250, y: 400 }
-    ]
 ];
 var height = 640;
 var width = 640;
@@ -91,7 +83,7 @@ function getMousePosition(canvas, event) {
     var rect = canvas.getBoundingClientRect();
     return {
         x: event.clientX - rect.left,
-        y: event.clientY - rect.top
+        y: event.clientY - rect.top,
     };
 }
 function checkForHover(mousePos, data) {
@@ -137,7 +129,7 @@ function setup() {
     canvas.width = width;
     document.body.appendChild(canvas);
     var context = canvas.getContext("2d");
-    var data = transformData(rawData, 0, 0, width, height);
+    var data = transformData(rawData, 100, 100, width - 200, height - 200);
     if (!context)
         return;
     canvas.addEventListener("mousemove", function (event) {
@@ -218,28 +210,56 @@ function transformData(data, startx, starty, width, height) {
                 x: (point.x - min.x) / xfactor + startx,
                 y: height - ((point.y - min.y) / yfactor - starty),
                 data: point,
-                hovered: false
+                hovered: false,
             });
         }
         transformed.push(newLine);
     }
     return transformed;
 }
-function drawAxes(ctx, startx, endx, lineWidth, offsetx, intervalsx, labelx, starty, endy, offsety, intervalsy, labely) {
+function drawAxes(ctx, startx, endx, lineWidth, offsetx, intervalsx, labelx, starty, endy, offsety, intervalsy, labely, width_data, data_start_x, height_data, data_start_y) {
     // draw y axis
     drawLineCustom(ctx, { x: startx + offsetx, y: starty + offsety }, { x: startx + offsetx, y: endy + offsety }, "black", lineWidth);
+    // draw y axis label
+    ctx.save();
+    ctx.translate(startx - 50, (endy - starty) / 2 + starty);
+    ctx.rotate(Math.PI * 1.5);
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.fillText(labely, 0, 0);
+    ctx.restore();
     // draw x axis
-    drawLineCustom(ctx, { x: startx + offsetx, y: starty + offsety }, { x: endx + offsetx, y: starty + offsety }, "black", lineWidth);
-    for (var x = 0; x < intervalsx; x++) {
+    drawLineCustom(ctx, { x: startx + offsetx, y: endy }, { x: endx + offsetx, y: endy }, "black", lineWidth);
+    // draw x axis label
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(labelx, (endx - startx) / 2 + startx, endy + 30);
+    var dx = width_data / intervalsx;
+    var dy = height_data / intervalsy;
+    for (var x = 0; x <= intervalsx; x++) {
+        var xpos = x * (endx - startx) / intervalsx + startx;
+        var data_point_x = (dx * x) + data_start_x;
+        ctx.fillStyle = "black";
+        ctx.font = "14px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(data_point_x.toString(), xpos, endy + 10);
     }
-    for (var y = 0; y < intervalsy; y++) {
-        var ypos = y * (endy - starty) / intervalsy;
+    for (var y = 0; y <= intervalsy; y++) {
+        var ypos = y * (endy - starty) / intervalsy + starty;
+        var data_point_y = height_data - (y * dy) + data_start_y;
+        ctx.fillStyle = "black";
+        ctx.font = "14px sans-serif";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "right";
+        ctx.fillText(data_point_y.toString(), startx - 10, ypos);
         drawLineCustom(ctx, { x: startx + offsetx, y: ypos + offsety }, { x: endx + offsetx, y: ypos + offsety }, y == 0 ? "gray" : "gray", lineWidth);
     }
 }
 function render(ctx, data) {
     ctx.clearRect(0, 0, width, height);
-    drawAxes(ctx, 0, width, 1, 0, 0, "", 0, height, 0, 10, "");
+    drawAxes(ctx, 100, width - 100, 1, 0, 4, "time", 100, height - 100, 0, 10, "your mom's weight(lbs)", 200, 0, 440, 100);
     for (var _i = 0, data_5 = data; _i < data_5.length; _i++) {
         var line = data_5[_i];
         if (line.points.length == 0)
