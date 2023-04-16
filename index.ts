@@ -1,3 +1,17 @@
+// from https://stackoverflow.com/a/7838871
+CanvasRenderingContext2D.prototype.roundRect = function(x: number, y: number, w: number, h: number, r: number) {
+  if (w < 2 * r) r = w / 2;
+  if (h < 2 * r) r = h / 2;
+  this.beginPath();
+  this.moveTo(x + r, y);
+  this.arcTo(x + w, y, x + w, y + h, r);
+  this.arcTo(x + w, y + h, x, y + h, r);
+  this.arcTo(x, y + h, x, y, r);
+  this.arcTo(x, y, x + w, y, r);
+  this.closePath();
+  return this;
+}
+
 let config = {
   STROKE_SIZE_NORMAL: 2,
   STROKE_SIZE_HOVERED: 3,
@@ -183,6 +197,21 @@ function drawPoint(ctx: Context, point: GraphPoint) {
   if (point.hovered) {
     color = config.COLOR_POINT_HOVERED;
     radius = config.POINT_SIZE_HOVERED;
+    ctx.beginPath();
+    const [x, y] = [point.data.x, point.data.y];
+    const textSize = ctx.measureText(`${x}, ${y}`);
+    const boxWidth = textSize.width + 10;
+    const boxHeight = 25;
+    ctx.roundRect(point.x - boxWidth / 2, (point.y - boxHeight / 2) - 30, boxWidth, boxHeight, 10);
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "white";
+    ctx.fill();
+    ctx.stroke();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "black";
+    ctx.fillText(`${x}, ${y}`, point.x, point.y - 30);
+    ctx.lineWidth = 1;
   } else {
     color = config.COLOR_POINT_NORMAL;
     radius = config.POINT_SIZE_NORMAL;
