@@ -27,7 +27,11 @@ let config = {
     COLOR_POINT_HOVERED: 'red',
     POINT_SIZE_NORMAL: 5,
     POINT_SIZE_HOVERED: 7,
+    TEXT_SIZE: 14,
+    FONT: 'sans-serif',
 }
+
+const dpi = window.devicePixelRatio
 
 interface Config {
     width: number // The width of the canvas
@@ -87,8 +91,13 @@ let rawData: RawData = [
     ],
 ]
 
-let height = 640
-let width = 640
+// this is the render size calculated later from the display size
+// any values assigned here will later get overwritten
+let height = 0
+let width = 0
+// this is the actual size that the element will be set to on screen
+let display_height = 800
+let display_width = 800
 
 function distance(a: Point, b: Point) {
     return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
@@ -114,7 +123,7 @@ function isPointHovered(point: GraphPoint, mouse: Point) {
     let radius = point.hovered
         ? config.POINT_SIZE_HOVERED
         : config.POINT_SIZE_NORMAL
-    return distance(point, mouse) <= radius
+    return distance(point, mouse) <= Math.floor(radius * dpi)
 }
 
 function isLineHovered(line: LineSegment, mouse: Point) {
@@ -126,14 +135,14 @@ function isLineHovered(line: LineSegment, mouse: Point) {
     )
         return false
     let threshold = 15
-    return distanceLine(mouse, line) <= threshold
+    return distanceLine(mouse, line) <= Math.floor(threshold * dpi)
 }
 
 function getMousePosition(canvas: HTMLCanvasElement, event: MouseEvent) {
     var rect = canvas.getBoundingClientRect()
     return {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
+        x: Math.floor(event.clientX * dpi) - rect.left,
+        y: Math.floor(event.clientY * dpi) - rect.top,
     }
 }
 
@@ -166,11 +175,20 @@ function checkForHover(mousePos: Point, data: PolyLine[]) {
 
 function setup() {
     let canvas = document.createElement('canvas')
+    height = Math.floor(display_height * dpi)
+    width = Math.floor(display_width * dpi)
     canvas.height = height
     canvas.width = width
+    canvas.style.height = display_height + 'px'
+    canvas.style.width = display_width + 'px'
+    config.POINT_SIZE_HOVERED *= dpi
+    config.POINT_SIZE_NORMAL *= dpi
+    config.STROKE_SIZE_HOVERED *= dpi
+    config.STROKE_SIZE_NORMAL *= dpi
+    config.TEXT_SIZE *= dpi
     document.body.appendChild(canvas)
     const context = canvas.getContext('2d')
-    let data = transformData(rawData, 100, 100, width - 200, height - 200)
+    let data = transformData(rawData, 150, 150, width - 300, height - 300)
     if (!context) return
     canvas.addEventListener('mousemove', (event: MouseEvent) => {
         const mousePos = getMousePosition(canvas, event)
@@ -220,13 +238,13 @@ function drawPoint(ctx: Context, point: GraphPoint) {
         const [x, y] = [point.data.x, point.data.y]
         const textSize = ctx.measureText(`${x}, ${y}`)
         const boxWidth = textSize.width + 10
-        const boxHeight = 25
+        const boxHeight = Math.floor(25 * dpi)
         ctx.roundRect(
             point.x - boxWidth / 2,
             point.y - boxHeight / 2 - 30,
             boxWidth,
             boxHeight,
-            10
+            Math.floor(10 * dpi)
         )
         ctx.strokeStyle = 'black'
         ctx.fillStyle = 'white'
@@ -311,8 +329,9 @@ function drawAxes(
         lineWidth
     )
     // draw y axis label
+    ctx.font = `${config.TEXT_SIZE}px ${config.FONT}`
     ctx.save()
-    ctx.translate(startx - 50, (endy - starty) / 2 + starty)
+    ctx.translate(startx - 100, (endy - starty) / 2 + starty)
     ctx.rotate(Math.PI * 1.5)
     ctx.fillStyle = 'black'
     ctx.textAlign = 'center'
@@ -330,14 +349,13 @@ function drawAxes(
     ctx.fillStyle = 'black'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
-    ctx.fillText(labelx, (endx - startx) / 2 + startx, endy + 30)
+    ctx.fillText(labelx, (endx - startx) / 2 + startx, endy + 50)
     let dx = width_data / intervalsx
     let dy = height_data / intervalsy
     for (let x = 0; x <= intervalsx; x++) {
         let xpos = (x * (endx - startx)) / intervalsx + startx
         let data_point_x = dx * x + data_start_x
         ctx.fillStyle = 'black'
-        ctx.font = '14px sans-serif'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'top'
         ctx.fillText(data_point_x.toString(), xpos, endy + 10)
@@ -346,7 +364,6 @@ function drawAxes(
         let ypos = (y * (endy - starty)) / intervalsy + starty
         let data_point_y = height_data - y * dy + data_start_y
         ctx.fillStyle = 'black'
-        ctx.font = '14px sans-serif'
         ctx.textBaseline = 'middle'
         ctx.textAlign = 'right'
         ctx.fillText(data_point_y.toString(), startx - 10, ypos)
@@ -364,14 +381,14 @@ function render(ctx: Context, data: PolyLine[]) {
     ctx.clearRect(0, 0, width, height)
     drawAxes(
         ctx,
-        100,
-        width - 100,
+        150,
+        width - 150,
         1,
         0,
         4,
         'time',
-        100,
-        height - 100,
+        150,
+        height - 150,
         0,
         10,
         "your mom's weight(lbs)",
